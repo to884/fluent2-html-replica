@@ -176,7 +176,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
   'use strict';
 
   const ENHANCE = '[data-fui-enhance]';
-  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton';
+  // v9 で useARIAButtonProps を通る部品。BreadcrumbButton は fui-Button を持たないが、
+  // useButtonBase_unstable を通る（react-breadcrumb/library/src/components/BreadcrumbButton/useBreadcrumbButton.ts:54-64）。
+  // 現在の項目にも aria-disabled="true" が付き、同じく操作が止まる
+  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton, .fui-BreadcrumbButton';
 
   const enhanced = (el) => el instanceof Element && el.closest(ENHANCE) !== null;
 
@@ -417,6 +420,11 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     return nav[key] || 'None';
   };
 
+  // IME の変換中のキー。変換を確定する Enter や候補を選ぶ矢印を、部品の操作として扱わない。
+  // Safari は変換を確定する keydown で isComposing を false にするので、keyCode 229 も見る。
+  // v9 はどちらも見ていない（v9 との意図した差）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
+
   const optionText = (opt) => (opt.getAttribute('data-text') ?? opt.textContent ?? '').trim();
   const isSelected = (opt) => opt.getAttribute('aria-selected') === 'true' || opt.getAttribute('aria-checked') === 'true';
 
@@ -560,6 +568,11 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     trigger.addEventListener('click', () => (open ? hide() : show()));
     trigger.addEventListener('blur', () => hide());
     trigger.addEventListener('keydown', (e) => {
+      // 変換中は文字を入れている最中なので、入力中として扱う（確定の直後の Space を選択の操作にしない）
+      if (isComposingKey(e)) {
+        if (isCombobox) isTyping = true;
+        return;
+      }
       const action = getAction(e, open, multiselect());
       if (isCombobox) {
         if (action === 'Type') isTyping = true;
@@ -666,6 +679,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
      SpinButton
      react-spinbutton/library/src/components/SpinButton/useSpinButton.tsx:
      間隔 39-46（最初 300ms、1000ms かけて 80ms へ線形に縮める）、増減 110-150、キー 190-238、端のボタンの無効 313-342
+     v9 との意図した差: 間隔を 80ms で止める（下の spin）。変換中のキーで値を確定も増減もしない（isComposingKey）
      値の属性: aria-valuemin、aria-valuemax（min、max）、根の data-step、data-step-page（step、stepPage。既定 1）
      ------------------------------------------------------------------------ */
   const DEFAULT_SPIN_DELAY_MS = 300;
@@ -742,7 +756,9 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       stepValue(dir, false);
       timer = window.setTimeout(() => {
         spinTime += spinDelay;
-        spinDelay = DEFAULT_SPIN_DELAY_MS + (MIN_SPIN_DELAY_MS - DEFAULT_SPIN_DELAY_MS) * (spinTime / MAX_SPIN_TIME_MS);
+        // v9（useSpinButton.tsx:143-148）は lerp の比を 1 で止めないので、1000ms を過ぎると間隔が 80ms を下回り、0 に近づく。
+        // ここでは MIN_SPIN_DELAY_MS の名前のとおり 80ms で止める
+        spinDelay = DEFAULT_SPIN_DELAY_MS + (MIN_SPIN_DELAY_MS - DEFAULT_SPIN_DELAY_MS) * Math.min(spinTime / MAX_SPIN_TIME_MS, 1);
         spin(dir);
       }, spinDelay);
     };
@@ -764,7 +780,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       dec.classList.toggle('fui-SpinButton__button_active', button === dec);
     };
     input.addEventListener('keydown', (e) => {
-      if (input.readOnly) return;
+      if (input.readOnly || isComposingKey(e)) return;
       let state = null;
       if (e.key === 'ArrowUp') { e.preventDefault(); stepValue(1, false); state = inc; }
       else if (e.key === 'ArrowDown') { e.preventDefault(); stepValue(-1, false); state = dec; }
@@ -1699,16 +1715,19 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       }
     });
 
-    // トリガーで下矢印を押すと開く（MenuTrigger/useMenuTrigger.ts:84）
+    // トリガーで下矢印を押すと開く（MenuTrigger/useMenuTrigger.ts:84）。無効のトリガーと、ほかが既定の動作を止めた keydown では開かない（同 :123、:223-225）。
+    // showPopover({ source }) でトリガーを invoker として渡す。引数なしで開くと、暗黙のアンカーがなくて位置がクリックとずれ、
+    // 開いている popover="auto" の中のトリガーでは、親子の関係がなくて親が閉じる（source で両方がクリックと同じになる。Chromium 157 で確かめた）。
+    // v9 と同じくクリックは起こさない。source を読まないブラウザーでは引数が無視され、引数なしと同じになる
     const t = trigger();
     if (t) {
       t.setAttribute('aria-haspopup', 'menu');
       t.setAttribute('aria-expanded', 'false');
       t.addEventListener('keydown', (ev) => {
-        if (ev.key === 'ArrowDown' && !popover.matches(':popover-open')) {
-          ev.preventDefault();
-          popover.showPopover();
-        }
+        if (ev.key !== 'ArrowDown' || ev.defaultPrevented || popover.matches(':popover-open')) return;
+        if (t.matches(':disabled') || t.getAttribute('aria-disabled') === 'true') return;
+        ev.preventDefault();
+        popover.showPopover({ source: t });
       });
     }
   }

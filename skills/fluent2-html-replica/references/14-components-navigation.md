@@ -360,6 +360,8 @@ Breadcrumb は、サイトやアプリの階層での現在地を示し、上の
 
 - 区切りは `ChevronRightRegular`（RTL は `ChevronLeftRegular`）である（`[bc]BreadcrumbDivider/useBreadcrumbDivider.tsx:73-75`）。CSS は RTL で右向きの形を左右反転する。
 - 現在の項目の `aria-disabled="true"` は、disabled の見た目にしない。v9 は Button の `disabled` を渡していないからである。disabled の見た目にするのは、`:disabled` か、`aria-current` のない `aria-disabled="true"`（v9 の `disabledFocusable`）である。
+- 操作: v9 の BreadcrumbButton は Button と同じく `useARIAButtonProps` を通るので、`aria-disabled="true"` ならクリックと Enter、Space を止める。現在の項目も止まる（`packages/react-components/react-aria/library/src/button/useARIAButtonProps.ts:50-74`）。React を使わない HTML では、Breadcrumb を `data-fui-enhance` の中に置けば、`actions.js` が同じく止める。
+- 無効の `<a>` は `href` を書かない。v9 は無効の `<a>` から `href` を外し、`role="link"` を付ける（同 `:124-146`）。`href` を残すと、`actions.js` がクリックとキーを止めても、中クリックやコンテキストメニューから開ける。現在の項目は、`href` を書かずに `<button>` で描く（`href` がなければ `button` になる）。
 - キーボード: 既定の `focusMode="tab"` は Tab キーで項目を移る。`focusMode="arrow"` は矢印キーのグループになる（`[bc]Breadcrumb/Breadcrumb.types.ts:33-35`）。`navigation.js` は arrow を扱わない。
 
 ### バリエーション
@@ -408,7 +410,7 @@ BreadcrumbItem の文字は `colorNeutralForeground2`（`[bc]BreadcrumbItem/useB
 ### 実装の例
 
 ```html demo
-<nav class="fui-Breadcrumb" aria-label="パンくずリスト">
+<nav class="fui-Breadcrumb" aria-label="パンくずリスト" data-fui-enhance>
   <ol class="fui-Breadcrumb__list" role="list">
     <li class="fui-BreadcrumbItem">
       <a class="fui-BreadcrumbButton" href="#">
@@ -428,14 +430,14 @@ BreadcrumbItem の文字は `colorNeutralForeground2`（`[bc]BreadcrumbItem/useB
 
 ```html demo
 <div style="display: grid; gap: 8px">
-  <nav class="fui-Breadcrumb" aria-label="small のパンくずリスト" data-size="small">
+  <nav class="fui-Breadcrumb" aria-label="small のパンくずリスト" data-size="small" data-fui-enhance>
     <ol class="fui-Breadcrumb__list" role="list">
       <li class="fui-BreadcrumbItem"><a class="fui-BreadcrumbButton" href="#">ホーム</a></li>
       <li class="fui-BreadcrumbDivider" aria-hidden="true"><svg class="fui-Icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7"/></svg></li>
       <li class="fui-BreadcrumbItem"><button class="fui-BreadcrumbButton" type="button" aria-current="page" aria-disabled="true">設定</button></li>
     </ol>
   </nav>
-  <nav class="fui-Breadcrumb" aria-label="large のパンくずリスト" data-size="large">
+  <nav class="fui-Breadcrumb" aria-label="large のパンくずリスト" data-size="large" data-fui-enhance>
     <ol class="fui-Breadcrumb__list" role="list">
       <li class="fui-BreadcrumbItem"><a class="fui-BreadcrumbButton" href="#">ホーム</a></li>
       <li class="fui-BreadcrumbDivider" aria-hidden="true"><svg class="fui-Icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7"/></svg></li>

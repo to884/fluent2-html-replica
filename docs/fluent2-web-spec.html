@@ -19384,7 +19384,7 @@ filter: drop-shadow(0 0 2px var(--colorNeutralShadowAmbient)) drop-shadow(0 8px 
 <li>JS が値を書くときは CSSOM（<code>element.style.setProperty</code>）を使う。CSSOM の書き込みは <code>style-src 'self'</code> の下でも効く。</li>
 <li>マークアップの style 属性と <code>&lt;style&gt;</code> 要素は、CSP の下では無視される。部品の働きに要る値は style 属性で渡さない。</li>
 <li>ProgressBar の値: 根に <code>data-percent</code>（0〜100 の整数）を書くか、<code>data-fui-enhance</code> の中に置いて <code>display.js</code> に計算させる。</li>
-<li>Popover と Menu の位置: <code>popovertarget</code> か <code>commandfor</code> で開けば、トリガーが暗黙のアンカーになる。Tooltip は <code>overlays.js</code> が CSSOM で結ぶ。</li>
+<li>Popover と Menu の位置: <code>popovertarget</code> か <code>commandfor</code> で開けば、トリガーが暗黙のアンカーになる。Tooltip は <code>overlays.js</code> が CSSOM で結ぶ。Menu を下矢印で開くときは、<code>overlays.js</code> が <code>showPopover({ source })</code> でトリガーを渡すので、同じく暗黙のアンカーになる（<code>source</code> に対応しないブラウザーでは位置がずれる）。</li>
 <li>見本の中の配置のための style 属性（flex、gap、max-width）は、CSP の下では無視されて並びが変わる。ページの配置は、自分の CSS ファイルか <code>layout.css</code> の <code>f2-</code> の class で書く。</li>
 <li>設計書の HTML（公開のリポジトリ to884/fluent2-html-replica の <code>docs/fluent2-web-spec.html</code>）は CSS と JS を埋め込んでいるので、この CSP の下では表示できない。</li>
 </ul>
@@ -22506,6 +22506,7 @@ filter: drop-shadow(0 0 2px var(--colorNeutralShadowAmbient)) drop-shadow(0 8px 
 <li>打ち込みは、値で始まる最初の選択肢を強調するだけで、一覧を絞り込まない。v9 でも絞り込みは利用者のコードの責任である。<code>freeform</code> と、フォーカスが外れたときに値を選択に戻す処理は再現していない。</li>
 <li>invalid の規則は、v9 でも無効かどうかを見ない（<code>useComboboxStyles.styles.ts:301-302</code>）。<code>:not(:focus-within)</code> を含む詳細度 (0,2,0) が disabled の (0,1,0) に勝つので、無効かつ不正のときは赤い枠になると読める（推論。描画では確かめていない）。</li>
 <li><code>aria-autocomplete</code> は v9 のスナップショットにないので付けない。</li>
+<li>IME の変換中のキー（<code>isComposing</code> が真か、<code>keyCode</code> が 229）は、一覧の操作にしない。v9 はこれを見ないので、日本語の変換を Enter で確定すると、強調中の選択肢が選ばれて入力が上書きされる。ここでは v9 と違えて止め、変換で入れたあとは入力中として扱う（確定の直後の Space を選択にしない）。Safari は変換を確定する keydown で <code>isComposing</code> を偽にするので、229 も見る。<code>tools/verify/behavior.html</code> で合成のイベントを使って確かめた。実際の IME での操作は確かめていない。</li>
 <li>inline の一覧（v9 の <code>inlinePopup</code>）の <code>z-index: 1</code> は、popover で最上層に出すので書いていない。</li>
 </ul>
 <h2 id="text-entry--dropdown">Dropdown</h2>
@@ -23062,7 +23063,7 @@ filter: drop-shadow(0 0 2px var(--colorNeutralShadowAmbient)) drop-shadow(0 8px 
 <ul>
 <li>既定の属性と、端に達したボタンの無効: <code>useSpinButton.tsx:300-342</code>。ARIA の値: <code>useSpinButton.tsx:350-356</code>。</li>
 <li>キーボード（<code>useSpinButton.tsx:190-231</code>。この JS が再現する）: ArrowUp / ArrowDown で 1 ステップ、PageUp / PageDown で大きなステップ、Home / End で最小 / 最大（Shift なし）、Enter で確定、Escape で打ちかけを戻す。キーを押している間は対応するボタンに <code>fui-SpinButton__button_active</code> を付けて押した見た目にする。</li>
-<li>ボタンを押し続けると繰り返す。最初は 300ms、1000ms かけて 80ms まで縮める（<code>useSpinButton.tsx:39-46,139-150</code>）。</li>
+<li>ボタンを押し続けると繰り返す。最初は 300ms、1000ms かけて 80ms まで縮め、そのあとは 80ms で繰り返す（<code>useSpinButton.tsx:39-46,139-150</code>。80ms で止めるのは v9 との差。「v9 との差と未確認の点」を参照）。</li>
 <li>ステップは根の <code>data-step</code> と <code>data-step-page</code>（v9 の <code>step</code> と <code>stepPage</code>。既定 1）で与える。</li>
 </ul>
 <p>出典のファイル: <code>react-spinbutton/library/src/components/SpinButton/useSpinButtonStyles.styles.ts</code>、<code>react-spinbutton/library/src/components/SpinButton/useSpinButton.tsx</code>、<code>react-spinbutton/library/src/components/SpinButton/SpinButton.types.ts</code></p>
@@ -23306,6 +23307,8 @@ filter: drop-shadow(0 0 2px var(--colorNeutralShadowAmbient)) drop-shadow(0 8px 
 <ul>
 <li>表示の書式（v9 の <code>displayValue</code>）と、制御された値（<code>value</code> と <code>onChange</code>）は再現していない。JS は数値を <code>step</code> の小数の桁で丸めて表示する。</li>
 <li>打った値を確定するときは、v9 と同じく範囲に収めない（<code>useSpinButton.tsx:240-264</code>）。</li>
+<li>長押しの間隔は 80ms で止める。v9 は線形の補間の比を 1 で止めないので（<code>useSpinButton.tsx:143-148</code>）、1000ms を過ぎると間隔が 80ms を下回り、0 に近づいて値が急に速く進む（300、234、182.5、142.4、111、86.6、67.6、52.7 ms…）。<code>MIN_SPIN_DELAY_MS</code> の名前に合わせて、ここでは v9 と違えた。</li>
+<li>IME の変換中のキー（<code>isComposing</code> が真か、<code>keyCode</code> が 229）では、値を確定も増減もしない。v9 は見ないので、全角の数字を変換して Enter で確定すると、打ちかけの文字が元の値に戻る。Combobox と同じ理由で v9 と違えた。</li>
 <li>underline のボタンの規則は、基本と同じ値を書き直すだけなので CSS では省いた（<code>useSpinButtonStyles.styles.ts:329-349</code>）。</li>
 </ul>
 <h2 id="text-entry--tagpicker">TagPicker</h2>
@@ -29989,6 +29992,8 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <ul>
 <li>区切りは <code>ChevronRightRegular</code>（RTL は <code>ChevronLeftRegular</code>）である（<code>[bc]BreadcrumbDivider/useBreadcrumbDivider.tsx:73-75</code>）。CSS は RTL で右向きの形を左右反転する。</li>
 <li>現在の項目の <code>aria-disabled="true"</code> は、disabled の見た目にしない。v9 は Button の <code>disabled</code> を渡していないからである。disabled の見た目にするのは、<code>:disabled</code> か、<code>aria-current</code> のない <code>aria-disabled="true"</code>（v9 の <code>disabledFocusable</code>）である。</li>
+<li>操作: v9 の BreadcrumbButton は Button と同じく <code>useARIAButtonProps</code> を通るので、<code>aria-disabled="true"</code> ならクリックと Enter、Space を止める。現在の項目も止まる（<code>packages/react-components/react-aria/library/src/button/useARIAButtonProps.ts:50-74</code>）。React を使わない HTML では、Breadcrumb を <code>data-fui-enhance</code> の中に置けば、<code>actions.js</code> が同じく止める。</li>
+<li>無効の <code>&lt;a&gt;</code> は <code>href</code> を書かない。v9 は無効の <code>&lt;a&gt;</code> から <code>href</code> を外し、<code>role="link"</code> を付ける（同 <code>:124-146</code>）。<code>href</code> を残すと、<code>actions.js</code> がクリックとキーを止めても、中クリックやコンテキストメニューから開ける。現在の項目は、<code>href</code> を書かずに <code>&lt;button&gt;</code> で描く（<code>href</code> がなければ <code>button</code> になる）。</li>
 <li>キーボード: 既定の <code>focusMode="tab"</code> は Tab キーで項目を移る。<code>focusMode="arrow"</code> は矢印キーのグループになる（<code>[bc]Breadcrumb/Breadcrumb.types.ts:33-35</code>）。<code>navigation.js</code> は arrow を扱わない。</li>
 </ul>
 <h3 id="navigation--バリエーション_2">バリエーション</h3>
@@ -30151,7 +30156,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <li>ハイコントラスト: ホバーと押下で文字とアイコンを <code>Highlight</code> にする（225-240）。disabled は背景 <code>ButtonFace</code>、枠と文字 <code>GrayText</code>（372-405）。</li>
 </ul>
 <h3 id="navigation--実装の例_2">実装の例</h3>
-<figure class="spec-demo"><div class="spec-demo__canvas"><nav class="fui-Breadcrumb" aria-label="パンくずリスト">
+<figure class="spec-demo"><div class="spec-demo__canvas"><nav class="fui-Breadcrumb" aria-label="パンくずリスト" data-fui-enhance>
   <ol class="fui-Breadcrumb__list" role="list">
     <li class="fui-BreadcrumbItem">
       <a class="fui-BreadcrumbButton" href="#">
@@ -30166,7 +30171,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
     <li class="fui-BreadcrumbDivider" aria-hidden="true"><svg class="fui-Icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7"/></svg></li>
     <li class="fui-BreadcrumbItem"><button class="fui-BreadcrumbButton" type="button" aria-current="page" aria-disabled="true">報告書</button></li>
   </ol>
-</nav></div><pre class="spec-code"><code class="language-html">&lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;パンくずリスト&quot;&gt;
+</nav></div><pre class="spec-code"><code class="language-html">&lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;パンくずリスト&quot; data-fui-enhance&gt;
   &lt;ol class=&quot;fui-Breadcrumb__list&quot; role=&quot;list&quot;&gt;
     &lt;li class=&quot;fui-BreadcrumbItem&quot;&gt;
       &lt;a class=&quot;fui-BreadcrumbButton&quot; href=&quot;#&quot;&gt;
@@ -30183,14 +30188,14 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
   &lt;/ol&gt;
 &lt;/nav&gt;</code></pre></figure>
 <figure class="spec-demo"><div class="spec-demo__canvas"><div style="display: grid; gap: 8px">
-  <nav class="fui-Breadcrumb" aria-label="small のパンくずリスト" data-size="small">
+  <nav class="fui-Breadcrumb" aria-label="small のパンくずリスト" data-size="small" data-fui-enhance>
     <ol class="fui-Breadcrumb__list" role="list">
       <li class="fui-BreadcrumbItem"><a class="fui-BreadcrumbButton" href="#">ホーム</a></li>
       <li class="fui-BreadcrumbDivider" aria-hidden="true"><svg class="fui-Icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7"/></svg></li>
       <li class="fui-BreadcrumbItem"><button class="fui-BreadcrumbButton" type="button" aria-current="page" aria-disabled="true">設定</button></li>
     </ol>
   </nav>
-  <nav class="fui-Breadcrumb" aria-label="large のパンくずリスト" data-size="large">
+  <nav class="fui-Breadcrumb" aria-label="large のパンくずリスト" data-size="large" data-fui-enhance>
     <ol class="fui-Breadcrumb__list" role="list">
       <li class="fui-BreadcrumbItem"><a class="fui-BreadcrumbButton" href="#">ホーム</a></li>
       <li class="fui-BreadcrumbDivider" aria-hidden="true"><svg class="fui-Icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7"/></svg></li>
@@ -30198,14 +30203,14 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
     </ol>
   </nav>
 </div></div><pre class="spec-code"><code class="language-html">&lt;div style=&quot;display: grid; gap: 8px&quot;&gt;
-  &lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;small のパンくずリスト&quot; data-size=&quot;small&quot;&gt;
+  &lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;small のパンくずリスト&quot; data-size=&quot;small&quot; data-fui-enhance&gt;
     &lt;ol class=&quot;fui-Breadcrumb__list&quot; role=&quot;list&quot;&gt;
       &lt;li class=&quot;fui-BreadcrumbItem&quot;&gt;&lt;a class=&quot;fui-BreadcrumbButton&quot; href=&quot;#&quot;&gt;ホーム&lt;/a&gt;&lt;/li&gt;
       &lt;li class=&quot;fui-BreadcrumbDivider&quot; aria-hidden=&quot;true&quot;&gt;&lt;svg class=&quot;fui-Icon&quot; width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; fill=&quot;currentColor&quot; aria-hidden=&quot;true&quot;&gt;&lt;path d=&quot;M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7&quot;/&gt;&lt;/svg&gt;&lt;/li&gt;
       &lt;li class=&quot;fui-BreadcrumbItem&quot;&gt;&lt;button class=&quot;fui-BreadcrumbButton&quot; type=&quot;button&quot; aria-current=&quot;page&quot; aria-disabled=&quot;true&quot;&gt;設定&lt;/button&gt;&lt;/li&gt;
     &lt;/ol&gt;
   &lt;/nav&gt;
-  &lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;large のパンくずリスト&quot; data-size=&quot;large&quot;&gt;
+  &lt;nav class=&quot;fui-Breadcrumb&quot; aria-label=&quot;large のパンくずリスト&quot; data-size=&quot;large&quot; data-fui-enhance&gt;
     &lt;ol class=&quot;fui-Breadcrumb__list&quot; role=&quot;list&quot;&gt;
       &lt;li class=&quot;fui-BreadcrumbItem&quot;&gt;&lt;a class=&quot;fui-BreadcrumbButton&quot; href=&quot;#&quot;&gt;ホーム&lt;/a&gt;&lt;/li&gt;
       &lt;li class=&quot;fui-BreadcrumbDivider&quot; aria-hidden=&quot;true&quot;&gt;&lt;svg class=&quot;fui-Icon&quot; width=&quot;20&quot; height=&quot;20&quot; viewBox=&quot;0 0 20 20&quot; fill=&quot;currentColor&quot; aria-hidden=&quot;true&quot;&gt;&lt;path d=&quot;M7.65 4.15c.2-.2.5-.2.7 0l5.49 5.46c.21.22.21.57 0 .78l-5.49 5.47a.5.5 0 0 1-.7-.71L12.8 10 7.65 4.85a.5.5 0 0 1 0-.7&quot;/&gt;&lt;/svg&gt;&lt;/li&gt;
@@ -32513,7 +32518,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 </table>
 <ul>
 <li>トリガーに <code>popovertarget="&lt;id&gt;"</code> を書けば JS なしで開閉する。Esc と外側のクリックで閉じる（<code>popover="auto"</code>）。v9 も Esc で閉じる（<code>packages/react-components/react-popover/library/src/components/PopoverSurface/usePopoverSurface.ts:87-96</code>）。</li>
-<li>位置はアンカー位置決めで決める。<code>popovertarget</code> か <code>commandfor</code> で開く面は、開いたトリガーがブラウザーの暗黙のアンカーになるので、<code>anchor-name</code> も <code>position-anchor</code> も書かない（Chromium 156 で確かめた）。インラインの style 属性を使わないので、CSP（<code>style-src 'self'</code>）の下でも位置が決まる。JS から <code>showPopover()</code> で開く面（Tooltip）は暗黙のアンカーができないので、<code>overlays.js</code> が開くときに CSSOM でトリガーと面を結ぶ。既定は above・center で、offset は 0（矢印ありは矢印の高さ）である（<code>packages/react-components/react-popover/library/src/components/Popover/usePopover.ts:266-282</code>）。</li>
+<li>位置はアンカー位置決めで決める。<code>popovertarget</code> か <code>commandfor</code> で開く面は、開いたトリガーがブラウザーの暗黙のアンカーになるので、<code>anchor-name</code> も <code>position-anchor</code> も書かない（Chromium 156 で確かめた）。インラインの style 属性を使わないので、CSP（<code>style-src 'self'</code>）の下でも位置が決まる。JS から <code>showPopover()</code> で開く面（Tooltip）は暗黙のアンカーができないので、<code>overlays.js</code> が開くときに CSSOM でトリガーと面を結ぶ。Menu を下矢印で開くときは、<code>overlays.js</code> が <code>showPopover({ source })</code> でトリガーを渡し、同じく暗黙のアンカーにする。既定は above・center で、offset は 0（矢印ありは矢印の高さ）である（<code>packages/react-components/react-popover/library/src/components/Popover/usePopover.ts:266-282</code>）。</li>
 <li><code>trapFocus</code> 相当（<code>role="dialog"</code> とフォーカスの閉じ込め）が要るときは、modal の <code>&lt;dialog&gt;</code> を使う。</li>
 </ul>
 <h3 id="overlays--バリエーション_2">バリエーション</h3>
@@ -32761,7 +32766,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <ul>
 <li>スロットの順は checkmark、icon、content（subText を含む）、secondaryContent、submenuIndicator である（<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemBase.tsx:104-119</code>）。</li>
 <li>checkbox と radio のチェックは <code>Checkmark16Filled</code> である。サブメニューの印は <code>ChevronRight</code> の Regular と Filled の組で、hover で Filled に切り替える（<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemStyles.styles.ts:47-52</code>）。</li>
-<li>キーボード（<code>data-fui-enhance</code> で <code>overlays.js</code> が扱う）: 上下の矢印で循環して移る、Home と End、先頭文字で探す（<code>packages/react-components/react-menu/library/src/components/MenuList/useMenuList.ts:49</code>、<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemBase.tsx:121</code>）。Enter と Space で選ぶ。Esc で閉じてトリガーへ戻る。Tab で閉じてトリガーへ戻る（<code>packages/react-components/react-menu/library/src/components/MenuPopover/useMenuPopover.ts:40-46,99-110</code>）。トリガーで下矢印を押すと開く（<code>packages/react-components/react-menu/library/src/components/MenuTrigger/useMenuTrigger.ts:84</code>）。</li>
+<li>キーボード（<code>data-fui-enhance</code> で <code>overlays.js</code> が扱う）: 上下の矢印で循環して移る、Home と End、先頭文字で探す（<code>packages/react-components/react-menu/library/src/components/MenuList/useMenuList.ts:49</code>、<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemBase.tsx:121</code>）。Enter と Space で選ぶ。Esc で閉じてトリガーへ戻る。Tab で閉じてトリガーへ戻る（<code>packages/react-components/react-menu/library/src/components/MenuPopover/useMenuPopover.ts:40-46,99-110</code>）。トリガーで下矢印を押すと開く（<code>packages/react-components/react-menu/library/src/components/MenuTrigger/useMenuTrigger.ts:84</code>）。無効（<code>disabled</code> か <code>aria-disabled="true"</code>）のトリガーと、ほかが既定の動作を止めた keydown では開かない（同 <code>:123</code>、<code>:223-225</code>）。下矢印は <code>showPopover({ source: トリガー })</code> で開く。トリガーが invoker になるので、クリックで開いたときと同じく暗黙のアンカーになって位置がそろい、開いている <code>popover="auto"</code> の中のトリガーから開いても親は閉じない。v9 と同じく、クリックのイベントは起こさない。</li>
 <li>マウスが乗った項目にフォーカスを移す（<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemBase.tsx:79-85</code>）。無効の項目は <code>aria-disabled="true"</code> で、フォーカスは受ける（同 <code>:70-71</code>）。</li>
 <li>項目を選ぶと閉じる（<code>packages/react-components/react-menu/library/src/components/MenuItem/useMenuItemBase.tsx:87</code>）。checkbox は閉じない（<code>persistOnClick</code>、<code>packages/react-components/react-menu/library/src/components/MenuItemCheckbox/useMenuItemCheckbox.tsx:45</code>）。Menu の根に <code>data-persist-on-item-click</code> を書くと、どの項目でも閉じない。radio は同じ <code>role="group"</code> の中の同じ <code>data-name</code> で 1 つだけ選ぶ（v9 の <code>name</code>）。</li>
 </ul>
@@ -33049,6 +33054,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <h3 id="overlays--v9-との差と未確認の点_3">v9 との差と未確認の点</h3>
 <ul>
 <li>MenuPopover は <code>popover</code> 属性で開き、位置はアンカー位置決めで近似する（Popover の節を参照）。v9 の既定の位置（below・start、サブメニューは after・top）は <code>position-area</code> に写した。</li>
+<li>下矢印で開くときの <code>showPopover({ source })</code> は、Chromium 157 で確かめた。<code>source</code> に対応しないブラウザーでは引数が無視され、下矢印で開いた面だけ暗黙のアンカーがなく、位置がクリックとずれる。開いている <code>popover="auto"</code> の中のトリガーから開くと、親が閉じる。クリックと Enter では起きない。どのブラウザーが対応するかは確かめていない。</li>
 <li>サブメニューの開閉（hover の 500ms の遅延、右矢印で開く、左矢印で閉じる、safe zone）は <code>overlays.js</code> では扱わない。見た目（<code>aria-expanded="true"</code>）だけを用意した。</li>
 <li>複数行の判定は <code>:has(.fui-MenuItem__subText)</code> で行う。v9 は <code>subText</code> の有無を state で見る。</li>
 <li>v9 で空の icon と checkmark を描いて揃えるのは、MenuList（または Menu）に <code>hasIcons</code>、<code>hasCheckmarks</code> を渡したときだけである（既定は false、<code>packages/react-components/react-menu/library/src/components/MenuList/useMenuList.ts:180-181</code>、<code>MenuItem/useMenuItemBase.tsx:104</code>）。ここではマークアップに空の <code>span</code> を書いて揃える。最初の見本は <code>hasIcons</code> を渡した v9 と同じ形である。MenuItemCheckbox と MenuItemRadio の checkmark は v9 が常に描く（<code>MenuItemCheckbox/useMenuItemCheckbox.tsx:49</code>）。</li>
@@ -34237,7 +34243,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
   'use strict';
 
   const ENHANCE = '[data-fui-enhance]';
-  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton';
+  // v9 で useARIAButtonProps を通る部品。BreadcrumbButton は fui-Button を持たないが、
+  // useButtonBase_unstable を通る（react-breadcrumb/library/src/components/BreadcrumbButton/useBreadcrumbButton.ts:54-64）。
+  // 現在の項目にも aria-disabled="true" が付き、同じく操作が止まる
+  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton, .fui-BreadcrumbButton';
 
   const enhanced = (el) => el instanceof Element && el.closest(ENHANCE) !== null;
 
@@ -34478,6 +34487,11 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     return nav[key] || 'None';
   };
 
+  // IME の変換中のキー。変換を確定する Enter や候補を選ぶ矢印を、部品の操作として扱わない。
+  // Safari は変換を確定する keydown で isComposing を false にするので、keyCode 229 も見る。
+  // v9 はどちらも見ていない（v9 との意図した差）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
+
   const optionText = (opt) => (opt.getAttribute('data-text') ?? opt.textContent ?? '').trim();
   const isSelected = (opt) => opt.getAttribute('aria-selected') === 'true' || opt.getAttribute('aria-checked') === 'true';
 
@@ -34621,6 +34635,11 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     trigger.addEventListener('click', () => (open ? hide() : show()));
     trigger.addEventListener('blur', () => hide());
     trigger.addEventListener('keydown', (e) => {
+      // 変換中は文字を入れている最中なので、入力中として扱う（確定の直後の Space を選択の操作にしない）
+      if (isComposingKey(e)) {
+        if (isCombobox) isTyping = true;
+        return;
+      }
       const action = getAction(e, open, multiselect());
       if (isCombobox) {
         if (action === 'Type') isTyping = true;
@@ -34727,6 +34746,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
      SpinButton
      react-spinbutton/library/src/components/SpinButton/useSpinButton.tsx:
      間隔 39-46（最初 300ms、1000ms かけて 80ms へ線形に縮める）、増減 110-150、キー 190-238、端のボタンの無効 313-342
+     v9 との意図した差: 間隔を 80ms で止める（下の spin）。変換中のキーで値を確定も増減もしない（isComposingKey）
      値の属性: aria-valuemin、aria-valuemax（min、max）、根の data-step、data-step-page（step、stepPage。既定 1）
      ------------------------------------------------------------------------ */
   const DEFAULT_SPIN_DELAY_MS = 300;
@@ -34803,7 +34823,9 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       stepValue(dir, false);
       timer = window.setTimeout(() => {
         spinTime += spinDelay;
-        spinDelay = DEFAULT_SPIN_DELAY_MS + (MIN_SPIN_DELAY_MS - DEFAULT_SPIN_DELAY_MS) * (spinTime / MAX_SPIN_TIME_MS);
+        // v9（useSpinButton.tsx:143-148）は lerp の比を 1 で止めないので、1000ms を過ぎると間隔が 80ms を下回り、0 に近づく。
+        // ここでは MIN_SPIN_DELAY_MS の名前のとおり 80ms で止める
+        spinDelay = DEFAULT_SPIN_DELAY_MS + (MIN_SPIN_DELAY_MS - DEFAULT_SPIN_DELAY_MS) * Math.min(spinTime / MAX_SPIN_TIME_MS, 1);
         spin(dir);
       }, spinDelay);
     };
@@ -34825,7 +34847,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       dec.classList.toggle('fui-SpinButton__button_active', button === dec);
     };
     input.addEventListener('keydown', (e) => {
-      if (input.readOnly) return;
+      if (input.readOnly || isComposingKey(e)) return;
       let state = null;
       if (e.key === 'ArrowUp') { e.preventDefault(); stepValue(1, false); state = inc; }
       else if (e.key === 'ArrowDown') { e.preventDefault(); stepValue(-1, false); state = dec; }
@@ -35760,16 +35782,19 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       }
     });
 
-    // トリガーで下矢印を押すと開く（MenuTrigger/useMenuTrigger.ts:84）
+    // トリガーで下矢印を押すと開く（MenuTrigger/useMenuTrigger.ts:84）。無効のトリガーと、ほかが既定の動作を止めた keydown では開かない（同 :123、:223-225）。
+    // showPopover({ source }) でトリガーを invoker として渡す。引数なしで開くと、暗黙のアンカーがなくて位置がクリックとずれ、
+    // 開いている popover="auto" の中のトリガーでは、親子の関係がなくて親が閉じる（source で両方がクリックと同じになる。Chromium 157 で確かめた）。
+    // v9 と同じくクリックは起こさない。source を読まないブラウザーでは引数が無視され、引数なしと同じになる
     const t = trigger();
     if (t) {
       t.setAttribute('aria-haspopup', 'menu');
       t.setAttribute('aria-expanded', 'false');
       t.addEventListener('keydown', (ev) => {
-        if (ev.key === 'ArrowDown' && !popover.matches(':popover-open')) {
-          ev.preventDefault();
-          popover.showPopover();
-        }
+        if (ev.key !== 'ArrowDown' || ev.defaultPrevented || popover.matches(':popover-open')) return;
+        if (t.matches(':disabled') || t.getAttribute('aria-disabled') === 'true') return;
+        ev.preventDefault();
+        popover.showPopover({ source: t });
       });
     }
   }
