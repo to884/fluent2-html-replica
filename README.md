@@ -114,6 +114,10 @@ Fluent 2 の見た目にしたいことを、ふつうの言葉で頼む。エ�
 
 [docs/fluent2-web-spec.html](docs/fluent2-web-spec.html) をダウンロードして、ブラウザーで開く。全 15 章に、部品の動く見本、マークアップ、寸法と色の表、全トークンの表がある。右上でテーマを切り替えられる。設計書はスキルのフォルダーの外にあるので、スキルを導入しても写されない。CSS と JS を中に埋め込んだ 1 ファイルなので、インラインの style と script を禁じる CSP のページの中では表示できない。
 
+## 版と変更履歴
+
+版は [Semantic Versioning](https://semver.org/spec/v2.0.0.html) に従い、`SKILL.md` の frontmatter の `metadata.version` に書く。`npx skills add` は main を入れる。版ごとの変更は [CHANGELOG.md](CHANGELOG.md) に、版ごとのタグ（`v0.1.1` など）と GitHub のリリースもある。前の版を使うときは、タグの版を取り出して手で写す。
+
 ## 注意
 
 - `skills/fluent2-html-replica/` の中のファイルと設計書は、開発用のリポジトリ（非公開）の原稿と原本から組み立てた生成物である。このリポジトリで直接直しても、次に組み立て直したときに上書きされる。
