@@ -33229,7 +33229,7 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <li>対象が画面から見えなくなったとき（v9 の <code>referenceHidden</code>）の <code>visibility: hidden</code> は、<code>data-hidden</code> 属性で写した。<code>overlays.js</code> はこの判定をしない。</li>
 <li>位置と矢印は Popover と同じ近似である。</li>
 <li>位置のために、<code>overlays.js</code> は開いている間だけトリガーの <code>anchor-name</code> に名前を足す。初めて足すときの計算値（利用者の CSS と style の名前）に自分の名前を連結し、利用者の <code>!important</code> にも負けないよう important で書く。閉じたら、足す前の style の宣言（値と優先度）に戻す。開いている間に利用者が style の <code>anchor-name</code> を書いたら、その宣言には触らない（そこに Tooltip の名前が残ることがある）。名前は開くたびに新しく作る（<code>--fui-tooltip-&lt;id&gt;-&lt;連番&gt;</code>）ので、残った古い名前を参照することはない。</li>
-<li>1 つの Tooltip を複数のトリガーで使い、開いたままポインターを別のトリガーへ直接移すと、Tooltip は前のトリガーに付いたままになる（一度閉じてから開けば、開いたトリガーに付く）。</li>
+<li>1 つの Tooltip を複数のトリガーで使い、開いたままポインターを別のトリガーへ移すと、閉じずに移った先のトリガーへ付け替える（前のトリガーの名前は外す）。v9 の Tooltip は 1 つのトリガーに 1 つなので、共有は React を使わない HTML の形である。</li>
 <li>Esc で消す処理は、IME の変換を取り消す Esc では動かない（入力欄に付けた Tooltip のため。v9 との意図した差）。</li>
 <li>Web Components v3 は padding が <code>4px 10px 6px</code> で、横が v9 より 1px 狭い。v9 の値を採った。</li>
 </ul>
@@ -35940,17 +35940,24 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       anchored = null;
       anchoredName = '';
     };
-    const show = () => {
-      if (tip.matches(':popover-open')) return;
-      if (visibleTooltip && visibleTooltip !== tip) visibleTooltip.hidePopover();
+    // 今のトリガーにアンカーを付ける（前のトリガーの名前は外し、新しい名前を作る）
+    const anchorToCurrent = () => {
       unanchor();
-      if (current) {
-        anchorSeq += 1;
-        anchoredName = `--fui-tooltip-${idPart}-${anchorSeq}`;
-        addAnchorName(current, anchoredName);
-        tip.style.setProperty('position-anchor', anchoredName);
-        anchored = current;
+      if (!current) return;
+      anchorSeq += 1;
+      anchoredName = `--fui-tooltip-${idPart}-${anchorSeq}`;
+      addAnchorName(current, anchoredName);
+      tip.style.setProperty('position-anchor', anchoredName);
+      anchored = current;
+    };
+    const show = () => {
+      if (tip.matches(':popover-open')) {
+        // 複数のトリガーで共有する Tooltip で、開いたままポインターやフォーカスが別のトリガーへ移ったら、付け替える
+        if (current !== anchored) anchorToCurrent();
+        return;
       }
+      if (visibleTooltip && visibleTooltip !== tip) visibleTooltip.hidePopover();
+      anchorToCurrent();
       tip.showPopover();
       // beforetoggle で開くのが取り消されたら、toggle は届かないので、ここで外す
       if (!tip.matches(':popover-open')) {
