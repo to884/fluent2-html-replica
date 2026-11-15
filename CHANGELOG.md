@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-15
+
+### Fixed
+
+- IME の変換中のキー（`isComposing` が真か、`keyCode` が 229）を、`assets/fluent2.js` のすべてのキーの処理で受けないようにした。0.1.1 で直した Combobox と SpinButton のほかに、Toolbar の中の入力欄の上下の矢印でフォーカスが移ること、non-modal の Dialog が変換を取り消す Esc で閉じること、入力欄に付けた Tooltip が同じ Esc で消えることがなくなった。Menu、Toaster、TabList、Tree、Nav、Card、Combobox の展開アイコンのキーも同じである。v9 はこれを見ないので、v9 との意図した差である。
+- Tooltip が、トリガーの `anchor-name` を自分の名前で置き換えて、利用者の CSS や style が書いた名前を消していた。利用者の CSS の `!important` には負けて、Tooltip がトリガーに付かなかった。今は、利用者の名前に自分の名前を足して important で書き、閉じたら足す前の style の宣言（値と優先度）に戻す。開いている間に利用者が style の `anchor-name` を書いたら、その宣言には触らない。名前は開くたびに新しく作る（`--fui-tooltip-<id>-<連番>`）。
+- CarouselButton（前・次）で、`aria-disabled="true"` のクリックが止まっていなかった。`data-fui-enhance` の中なら、Button と同じく止める（v9 と同じ）。端の判定が、利用者の書いた `disabled` と `aria-disabled` を上書きしていた。今は端で付ける無効だけを書き、端を離れたら戻す。付けている間に利用者が変えた属性は戻さない。
+
+### Changed
+
+- CarouselButton の端でないボタンに、`aria-disabled="false"` を書かなくなった（属性なしと同じ意味である）。
+
 ## [0.1.1] - 2026-11-15
 
 ### Fixed
@@ -26,6 +38,7 @@
 
 - 最初の版。トークンの CSS 変数、FluentProvider に当たる土台、47 種類のコンポーネントの CSS と小さな JS、日本語の設計書、ブランドの 16 段の生成器。
 
-[Unreleased]: https://github.com/to884/fluent2-html-replica/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/to884/fluent2-html-replica/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/to884/fluent2-html-replica/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/to884/fluent2-html-replica/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/to884/fluent2-html-replica/releases/tag/v0.1.0
