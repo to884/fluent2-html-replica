@@ -856,6 +856,8 @@ CarouselNavButton の点（`[car]CarouselNavButton/useCarouselNavButtonStyles.st
 - 前後のボタンの背景: v9 は Carousel の `colorNeutralBackgroundAlpha` を Button の class より前に結合するので、Button の subtle の背景（透明）が勝つと読める（`[car]CarouselButton/useCarouselButtonStyles.styles.ts:38-43`。Griffel の `mergeClasses` の順からの推論）。CSS は subtle の背景にした。ブラウザーで確かめていない。
 - `aria-roledescription="carousel"` は v9 のソースにない。WAI-ARIA の APG に沿うなら足してよい。
 - v9 はキーボードの左右の矢印で点を移る。`navigation.js` は Tab キーでの移動とクリックだけを扱う。
+- 前後のボタンの無効は、利用者の値を優先する。v9 も利用者の props を端の判定のあとで展開する（`[car]CarouselButton/useCarouselButton.tsx:114-119`）。`navigation.js` が書くのは端で付ける無効だけで、付ける前の値を覚え、端を離れたら戻す。付けている間に利用者が `disabled` か `aria-disabled` を変えたら、変えた属性だけは戻さずに利用者の値を残し、変えていない属性は戻す。利用者があとから無効を外したり付けたりしても、カードを動かしたときに上書きしない。端でないボタンには `aria-disabled` を書かない。v9 は端でないときも `aria-disabled="false"` を描く（`[car]CarouselButton/useCarouselButton.tsx:116`）が、`false` と属性なしは同じ意味である。`aria-disabled="true"` のクリックは、Button と同じく `actions.js` が止める（v9 の `useButton_unstable` と同じ）。
+- 点（CarouselNavButton）は、`aria-disabled="true"` でもクリックで移る。v9 も `useARIAButtonProps` の `onClick` を自分の処理で上書きするので、止まらない（`[car]CarouselNavButton/useCarouselNavButton.ts:87-88`）。
 
 ## Table
 

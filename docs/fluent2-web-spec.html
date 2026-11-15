@@ -19385,6 +19385,8 @@ filter: drop-shadow(0 0 2px var(--colorNeutralShadowAmbient)) drop-shadow(0 8px 
 <li>マークアップの style 属性と <code>&lt;style&gt;</code> 要素は、CSP の下では無視される。部品の働きに要る値は style 属性で渡さない。</li>
 <li>ProgressBar の値: 根に <code>data-percent</code>（0〜100 の整数）を書くか、<code>data-fui-enhance</code> の中に置いて <code>display.js</code> に計算させる。</li>
 <li>Popover と Menu の位置: <code>popovertarget</code> か <code>commandfor</code> で開けば、トリガーが暗黙のアンカーになる。Tooltip は <code>overlays.js</code> が CSSOM で結ぶ。Menu を下矢印で開くときは、<code>overlays.js</code> が <code>showPopover({ source })</code> でトリガーを渡すので、同じく暗黙のアンカーになる（<code>source</code> に対応しないブラウザーでは位置がずれる）。</li>
+<li>Tooltip がトリガーに書く <code>anchor-name</code> は、利用者の CSS や style が書いた名前を残して足し、閉じたら足す前の宣言に戻す（開いている間に利用者が書いた宣言には触らない）。</li>
+<li><code>fluent2.js</code> のキーの処理は、IME の変換中のキー（<code>isComposing</code> が真か、<code>keyCode</code> が 229）を受けない。日本語の変換を確定する Enter、取り消す Esc、候補を選ぶ矢印は、部品の操作にならない（v9 との意図した差）。</li>
 <li>見本の中の配置のための style 属性（flex、gap、max-width）は、CSP の下では無視されて並びが変わる。ページの配置は、自分の CSS ファイルか <code>layout.css</code> の <code>f2-</code> の class で書く。</li>
 <li>設計書の HTML（公開のリポジトリ to884/fluent2-html-replica の <code>docs/fluent2-web-spec.html</code>）は CSS と JS を埋め込んでいるので、この CSP の下では表示できない。</li>
 </ul>
@@ -31235,6 +31237,8 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <li>前後のボタンの背景: v9 は Carousel の <code>colorNeutralBackgroundAlpha</code> を Button の class より前に結合するので、Button の subtle の背景（透明）が勝つと読める（<code>[car]CarouselButton/useCarouselButtonStyles.styles.ts:38-43</code>。Griffel の <code>mergeClasses</code> の順からの推論）。CSS は subtle の背景にした。ブラウザーで確かめていない。</li>
 <li><code>aria-roledescription="carousel"</code> は v9 のソースにない。WAI-ARIA の APG に沿うなら足してよい。</li>
 <li>v9 はキーボードの左右の矢印で点を移る。<code>navigation.js</code> は Tab キーでの移動とクリックだけを扱う。</li>
+<li>前後のボタンの無効は、利用者の値を優先する。v9 も利用者の props を端の判定のあとで展開する（<code>[car]CarouselButton/useCarouselButton.tsx:114-119</code>）。<code>navigation.js</code> が書くのは端で付ける無効だけで、付ける前の値を覚え、端を離れたら戻す。付けている間に利用者が <code>disabled</code> か <code>aria-disabled</code> を変えたら、変えた属性だけは戻さずに利用者の値を残し、変えていない属性は戻す。利用者があとから無効を外したり付けたりしても、カードを動かしたときに上書きしない。端でないボタンには <code>aria-disabled</code> を書かない。v9 は端でないときも <code>aria-disabled="false"</code> を描く（<code>[car]CarouselButton/useCarouselButton.tsx:116</code>）が、<code>false</code> と属性なしは同じ意味である。<code>aria-disabled="true"</code> のクリックは、Button と同じく <code>actions.js</code> が止める（v9 の <code>useButton_unstable</code> と同じ）。</li>
+<li>点（CarouselNavButton）は、<code>aria-disabled="true"</code> でもクリックで移る。v9 も <code>useARIAButtonProps</code> の <code>onClick</code> を自分の処理で上書きするので、止まらない（<code>[car]CarouselNavButton/useCarouselNavButton.ts:87-88</code>）。</li>
 </ul>
 <h2 id="navigation--table">Table</h2>
 <p>略記: <code>[table]</code> = <code>packages/react-components/react-table/library/src/components/</code></p>
@@ -33224,6 +33228,9 @@ div.fui-Listbox.fui-TagPickerList           role=&quot;listbox&quot;、popover
 <li><code>popover="manual"</code> で開き、<code>overlays.js</code> が遅延と blur と Esc を扱う。<code>popover="hint"</code> や <code>interestfor</code> のような新しい仕組みは、対応状況を確かめていないので使っていない。JS がないと Tooltip は出ない。</li>
 <li>対象が画面から見えなくなったとき（v9 の <code>referenceHidden</code>）の <code>visibility: hidden</code> は、<code>data-hidden</code> 属性で写した。<code>overlays.js</code> はこの判定をしない。</li>
 <li>位置と矢印は Popover と同じ近似である。</li>
+<li>位置のために、<code>overlays.js</code> は開いている間だけトリガーの <code>anchor-name</code> に名前を足す。初めて足すときの計算値（利用者の CSS と style の名前）に自分の名前を連結し、利用者の <code>!important</code> にも負けないよう important で書く。閉じたら、足す前の style の宣言（値と優先度）に戻す。開いている間に利用者が style の <code>anchor-name</code> を書いたら、その宣言には触らない（そこに Tooltip の名前が残ることがある）。名前は開くたびに新しく作る（<code>--fui-tooltip-&lt;id&gt;-&lt;連番&gt;</code>）ので、残った古い名前を参照することはない。</li>
+<li>1 つの Tooltip を複数のトリガーで使い、開いたままポインターを別のトリガーへ直接移すと、Tooltip は前のトリガーに付いたままになる（一度閉じてから開けば、開いたトリガーに付く）。</li>
+<li>Esc で消す処理は、IME の変換を取り消す Esc では動かない（入力欄に付けた Tooltip のため。v9 との意図した差）。</li>
 <li>Web Components v3 は padding が <code>4px 10px 6px</code> で、横が v9 より 1px 狭い。v9 の値を採った。</li>
 </ul>
 <h2 id="overlays--toast">Toast</h2>
@@ -34242,11 +34249,17 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
 (() => {
   'use strict';
 
+  // IME の変換中のキー（isComposing、Safari は keyCode 229）は、部品の操作にしない。
+  // 変換を確定する Enter、取り消す Esc、候補を選ぶ矢印が、部品のキーとして働かないようにする（docs/conventions.md の「キーボード」）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
+
   const ENHANCE = '[data-fui-enhance]';
   // v9 で useARIAButtonProps を通る部品。BreadcrumbButton は fui-Button を持たないが、
   // useButtonBase_unstable を通る（react-breadcrumb/library/src/components/BreadcrumbButton/useBreadcrumbButton.ts:54-64）。
-  // 現在の項目にも aria-disabled="true" が付き、同じく操作が止まる
-  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton, .fui-BreadcrumbButton';
+  // 現在の項目にも aria-disabled="true" が付き、同じく操作が止まる。
+  // CarouselButton（前・次）も useButton_unstable を通る（react-carousel/library/src/components/CarouselButton/useCarouselButton.tsx:105-121）。
+  // CarouselNavButton は useARIAButtonProps の onClick を自分の処理で上書きするので（useCarouselNavButton.ts:87-88）、v9 でも止まらない。ここにも入れない
+  const CONTROL = '.fui-Button, .fui-Link, .fui-InfoButton, .fui-BreadcrumbButton, .fui-CarouselButton';
 
   const enhanced = (el) => el instanceof Element && el.closest(ENHANCE) !== null;
 
@@ -34275,6 +34288,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     }, true);
 
     document.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       if (ev.key !== 'Enter' && ev.key !== ' ') return;
       if (blockedControl(ev.target)) {
         ev.preventDefault();
@@ -34336,6 +34350,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     });
 
     toolbar.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       const all = items();
       const index = all.indexOf(document.activeElement);
       if (index < 0) return;
@@ -34714,6 +34729,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
         trigger.focus();
       });
       expandIcon.addEventListener('keydown', (e) => {
+        if (isComposingKey(e)) return;
         if (open && e.key === 'Escape') {
           e.preventDefault();
           e.stopPropagation();
@@ -35011,6 +35027,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
 (() => {
   'use strict';
 
+  // IME の変換中のキー（isComposing、Safari は keyCode 229）は、部品の操作にしない。
+  // 変換を確定する Enter、取り消す Esc、候補を選ぶ矢印が、部品のキーとして働かないようにする（docs/conventions.md の「キーボード」）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
+
   // --- getInitials（react-avatar/library/src/utils/getInitials.ts）---------------------------
   // 正規表現の \u エスケープを避け、文字の範囲を数値で比べる（内容は v9 の正規表現と同じ）
 
@@ -35221,6 +35241,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       toggle(event);
     });
     card.addEventListener('keydown', (event) => {
+      if (isComposingKey(event)) return;
       if (event.key !== 'Enter') return;
       const focusable = event.target.closest(FOCUSABLE);
       if (focusable && focusable !== checkbox && focusable !== card) return;
@@ -35276,6 +35297,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
  */
 (function () {
   'use strict';
+
+  // IME の変換中のキー（isComposing、Safari は keyCode 229）は、部品の操作にしない。
+  // 変換を確定する Enter、取り消す Esc、候補を選ぶ矢印が、部品のキーとして働かないようにする（docs/conventions.md の「キーボード」）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
 
   // 矢印キーでの移動の共通処理: items の中で、current から delta だけ進んだ要素を返す（circular なら端で回る）
   function step(items, current, delta, circular) {
@@ -35352,6 +35377,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       }
     });
     list.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       const prevKey = vertical ? 'ArrowUp' : 'ArrowLeft';
       const nextKey = vertical ? 'ArrowDown' : 'ArrowRight';
       const rtl = !vertical && getComputedStyle(list).direction === 'rtl';
@@ -35411,6 +35437,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       focusItem(item);
     });
     tree.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       const item = document.activeElement;
       if (!item || !item.classList || !item.classList.contains('fui-TreeItem') || !tree.contains(item)) return;
       const items = visibleItems();
@@ -35514,6 +35541,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     });
     nav.addEventListener('toggle', syncCategories, true);
     nav.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
       const items = focusables();
       const cur = document.activeElement;
@@ -35533,6 +35561,22 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     const prev = car.querySelector('.fui-CarouselButton[data-direction="prev"]');
     const next = car.querySelector('.fui-CarouselButton[data-direction="next"]');
     const circular = car.hasAttribute('data-circular');
+    // 前後のボタンの無効は、利用者の値を優先する（v9 は利用者の props を端の判定のあとで展開する。useCarouselButton.tsx:114-119）。
+    // ここで書くのは、端で付ける無効だけである。付ける前の値を覚え、端を離れたら戻す。付けている間に利用者が
+    // disabled か aria-disabled を変えたら（MutationObserver で見る）、変えた属性だけは戻さずに利用者の値を残す。
+    // 変えていないほうの属性は戻す（属性ごとに決める）
+    const buttons = [prev, next].filter(Boolean);
+    const edgeSaved = new Map(); // ボタン → 端の無効を付ける前の { disabled, aria }
+    const touched = new Map(); // ボタン → 端の無効を付けたあとで、利用者が変えた属性の名前の Set
+    const markTouched = (r) => {
+      if (!touched.has(r.target)) touched.set(r.target, new Set());
+      touched.get(r.target).add(r.attributeName);
+    };
+    const watch = typeof MutationObserver === 'function'
+      ? new MutationObserver((records) => records.forEach(markTouched))
+      : null;
+    if (watch) buttons.forEach((b) => watch.observe(b, { attributes: true, attributeFilter: ['disabled', 'aria-disabled'] }));
+    const takeAuthorChanges = () => { if (watch) watch.takeRecords().forEach(markTouched); };
     let index = 0;
 
     function goTo(i) {
@@ -35554,12 +35598,29 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
         c.setAttribute('aria-hidden', String(k !== i));
       });
       // 端では前後のボタンを使えなくする（useCarouselButton.tsx:95-97。循環しないとき）
+      takeAuthorChanges();
       [[prev, 0], [next, cards.length - 1]].forEach(([btn, edge]) => {
         if (!btn) return;
         const off = !circular && i === edge;
-        btn.disabled = off;
-        btn.setAttribute('aria-disabled', String(off));
+        const saved = edgeSaved.get(btn);
+        if (off && !saved) {
+          edgeSaved.set(btn, { disabled: btn.disabled, aria: btn.getAttribute('aria-disabled') });
+          touched.delete(btn);
+          btn.disabled = true;
+          btn.setAttribute('aria-disabled', 'true');
+        } else if (!off && saved) {
+          edgeSaved.delete(btn);
+          const changed = touched.get(btn) || new Set();
+          if (!changed.has('disabled')) btn.disabled = saved.disabled;
+          if (!changed.has('aria-disabled')) {
+            if (saved.aria === null) btn.removeAttribute('aria-disabled');
+            else btn.setAttribute('aria-disabled', saved.aria);
+          }
+          touched.delete(btn);
+        }
       });
+      // 自分の書き込みの記録は、利用者の変更として数えない
+      if (watch) watch.takeRecords();
     }
 
     if (prev) prev.addEventListener('click', () => goTo(index - 1));
@@ -35616,6 +35677,10 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
 (() => {
   'use strict';
 
+  // IME の変換中のキー（isComposing、Safari は keyCode 229）は、部品の操作にしない。
+  // 変換を確定する Enter、取り消す Esc、候補を選ぶ矢印が、部品のキーとして働かないようにする（docs/conventions.md の「キーボード」）
+  const isComposingKey = (e) => e.isComposing || e.keyCode === 229;
+
   const ENHANCE = '[data-fui-enhance]';
   const reduceMotion = () => window.matchMedia('screen and (prefers-reduced-motion: reduce)').matches;
 
@@ -35652,6 +35717,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     }
     // show() で開いた non-modal は、ブラウザーによっては Esc で閉じない。v9 は閉じる
     dialog.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       if (ev.key === 'Escape' && dialog.open && !dialog.matches(':modal')) {
         ev.preventDefault();
         dialog.close();
@@ -35709,6 +35775,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     });
 
     popover.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       const list = items();
       const index = list.indexOf(document.activeElement);
       switch (ev.key) {
@@ -35791,6 +35858,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
       t.setAttribute('aria-haspopup', 'menu');
       t.setAttribute('aria-expanded', 'false');
       t.addEventListener('keydown', (ev) => {
+        if (isComposingKey(ev)) return;
         if (ev.key !== 'ArrowDown' || ev.defaultPrevented || popover.matches(':popover-open')) return;
         if (t.matches(':disabled') || t.getAttribute('aria-disabled') === 'true') return;
         ev.preventDefault();
@@ -35804,6 +35872,55 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
   // :245-248（blur ではすぐ消す）、:141-157（Esc で消す）
   let visibleTooltip = null;
 
+  // トリガーの anchor-name。利用者の CSS や style が書いたものを消さずに、自分の名前を足し、閉じたら戻す。
+  // - 初めて足すとき、そのときの計算値（CSS と style の両方。none なら空）を覚え、それと自分の名前を連結して、
+  //   利用者の CSS の !important に負けないよう important で書く。利用者の値は分割も編集もしない。
+  // - 自分のものかどうかは、今の style の宣言（値と優先度）が、最後に自分が書いたものと同一かで決める。
+  //   同一なら、自分の名前を足し引きして書き直し、自分の名前がなくなったら足す前の宣言に戻す。
+  //   違えば、利用者が書いたものとして宣言には触らず、覚えたことを捨てる（次に足すときは、その宣言から始め直す）
+  const anchorState = new WeakMap();
+  const declOf = (el) => ({ value: el.style.getPropertyValue('anchor-name'), priority: el.style.getPropertyPriority('anchor-name') });
+  const sameDecl = (a, b) => a.value === b.value && a.priority === b.priority;
+  const writeAnchorNames = (el, st) => {
+    const value = [st.base].concat([...st.own]).filter((v) => v !== '').join(', ');
+    el.style.setProperty('anchor-name', value, 'important');
+    st.written = declOf(el);
+  };
+  // 利用者が書き換えていれば、覚えたことを捨てて undefined を返す
+  const ownedState = (el) => {
+    const st = anchorState.get(el);
+    if (st && !sameDecl(declOf(el), st.written)) {
+      anchorState.delete(el);
+      return undefined;
+    }
+    return st;
+  };
+  const addAnchorName = (el, name) => {
+    let st = ownedState(el);
+    if (!st) {
+      // 計算値は削らずにそのまま使う（末尾のエスケープした空白 --a\ を壊さないため）
+      const computed = getComputedStyle(el).getPropertyValue('anchor-name');
+      st = { original: declOf(el), base: computed.trim() === 'none' ? '' : computed, own: new Set(), written: null };
+      anchorState.set(el, st);
+    }
+    st.own.add(name);
+    writeAnchorNames(el, st);
+  };
+  const removeAnchorName = (el, name) => {
+    const st = ownedState(el);
+    if (!st || !st.own.delete(name)) return;
+    if (st.own.size > 0) {
+      writeAnchorNames(el, st);
+      return;
+    }
+    anchorState.delete(el);
+    if (st.original.value) el.style.setProperty('anchor-name', st.original.value, st.original.priority);
+    else el.style.removeProperty('anchor-name');
+  };
+  // アンカーの名前は、開くたびに新しく作る。id を置き換えただけだと tip.a と tip_a が同じ名前になり、
+  // Tooltip ごとに 1 つの名前だと、利用者が途中で書いた宣言に残った名前を、別のトリガーで開き直したときに参照してしまう
+  let anchorSeq = 0;
+
   function setupTooltip(tip) {
     if (!tip.id) return;
     const id = CSS.escape(tip.id);
@@ -35812,24 +35929,43 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     const hideDelay = Number(tip.getAttribute('data-hide-delay') ?? 250);
     let timer = 0;
     // JS から開く popover には暗黙のアンカーができないので、CSSOM でトリガーと面を結ぶ。
-    // style 属性ではなく CSSOM で書くので、CSP（style-src 'self'）の下でも効く
-    const anchorName = `--fui-tooltip-${tip.id.replace(/[^A-Za-z0-9_-]/g, '_')}`;
+    // style 属性ではなく CSSOM で書くので、CSP（style-src 'self'）の下でも効く。
+    // 名前は開いている間だけトリガーに足し、閉じたら外す（Tooltip には閉じる動きがない）
+    const idPart = tip.id.replace(/[^A-Za-z0-9_-]/g, '_');
     let current = null;
+    let anchored = null;
+    let anchoredName = '';
+    const unanchor = () => {
+      if (anchored) removeAnchorName(anchored, anchoredName);
+      anchored = null;
+      anchoredName = '';
+    };
     const show = () => {
       if (tip.matches(':popover-open')) return;
       if (visibleTooltip && visibleTooltip !== tip) visibleTooltip.hidePopover();
-      targets.forEach((t) => { if (t !== current && t.style.getPropertyValue('anchor-name') === anchorName) t.style.removeProperty('anchor-name'); });
+      unanchor();
       if (current) {
-        current.style.setProperty('anchor-name', anchorName);
-        tip.style.setProperty('position-anchor', anchorName);
+        anchorSeq += 1;
+        anchoredName = `--fui-tooltip-${idPart}-${anchorSeq}`;
+        addAnchorName(current, anchoredName);
+        tip.style.setProperty('position-anchor', anchoredName);
+        anchored = current;
       }
       tip.showPopover();
+      // beforetoggle で開くのが取り消されたら、toggle は届かないので、ここで外す
+      if (!tip.matches(':popover-open')) {
+        unanchor();
+        return;
+      }
       visibleTooltip = tip;
     };
     const hide = () => {
       if (tip.matches(':popover-open')) tip.hidePopover();
       if (visibleTooltip === tip) visibleTooltip = null;
     };
+    // 別の Tooltip が出て閉じられたとき（上の visibleTooltip.hidePopover()）も、名前を外す
+    // toggle は後から届くので、そのときにもう開き直していれば外さない
+    tip.addEventListener('toggle', () => { if (!tip.matches(':popover-open')) unanchor(); });
     const schedule = (fn, delay) => {
       clearTimeout(timer);
       timer = window.setTimeout(fn, delay);
@@ -35843,6 +35979,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
         hide();
       });
       target.addEventListener('keydown', (ev) => {
+        if (isComposingKey(ev)) return;
         if (ev.key === 'Escape' && tip.matches(':popover-open')) {
           ev.preventDefault();
           clearTimeout(timer);
@@ -35960,6 +36097,7 @@ The name and trademarks of copyright holders may NOT be used in advertising or p
     toaster.setAttribute('role', 'list');
     // Esc ですべて閉じる（Toaster/useToaster.tsx:36-46）、上下の矢印で移る（useToasterFocusManagement.ts:45-60）
     toaster.addEventListener('keydown', (ev) => {
+      if (isComposingKey(ev)) return;
       const list = Array.from(toaster.querySelectorAll(':scope > .fui-ToastContainer'));
       if (ev.key === 'Escape') {
         ev.preventDefault();
