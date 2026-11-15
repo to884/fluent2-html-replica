@@ -6,6 +6,12 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-15
+
+### Fixed
+
+- 1 つの Tooltip を複数のトリガーで使い、開いたままポインターを別のトリガーへ移すと、Tooltip が前のトリガーに付いたままになっていた。閉じずに、移った先のトリガーへ付け替える。
+
 ## [0.1.2] - 2026-11-15
 
 ### Fixed
@@ -38,7 +44,8 @@
 
 - 最初の版。トークンの CSS 変数、FluentProvider に当たる土台、47 種類のコンポーネントの CSS と小さな JS、日本語の設計書、ブランドの 16 段の生成器。
 
-[Unreleased]: https://github.com/to884/fluent2-html-replica/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/to884/fluent2-html-replica/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/to884/fluent2-html-replica/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/to884/fluent2-html-replica/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/to884/fluent2-html-replica/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/to884/fluent2-html-replica/releases/tag/v0.1.0
